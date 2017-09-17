@@ -1,0 +1,22 @@
+galaxy_info:
+  author: Anton Bessonov
+  description: Install or update docker-engine from docker project apt repository
+
+  license: MIT
+
+  min_ansible_version: 1.8
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - trusty
+        - xenial
+
+  galaxy_tags:
+    - docker
+    - engine
+    - system
+    - ubuntu
+    - daemon
+
+dependencies: []

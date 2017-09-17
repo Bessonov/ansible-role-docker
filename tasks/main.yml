@@ -1,0 +1,57 @@
+- name: cert tools present
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - apt-transport-https
+    - ca-certificates
+
+- name: docker apt-key present
+  become: true
+  apt_key:
+    url: "https://yum.dockerproject.org/gpg"
+    state: present
+
+- name: docker repo present
+  become: true
+  apt_repository:
+    repo: "deb https://apt.dockerproject.org/repo/ {{ ansible_distribution|lower }}-{{ ansible_lsb.codename|lower }} main"
+    filename: 'docker'
+    state: present
+
+- name: check installed docker version
+  shell: 'dpkg -l docker-engine | grep {{ docker_engine_version }}'
+  ignore_errors: yes
+  register: docker_engine_version_install
+  changed_when: "docker_engine_version_install.rc != 0"
+
+- name: apt-get update
+  become: true
+  apt:
+    update_cache: yes
+  when: docker_engine_version_install.changed
+
+- name: docker-engine absent
+  become: true
+  apt:
+    name: "docker-engine"
+    state: absent
+  when: docker_engine_version_install.changed
+  notify: docker_restart
+
+- name: docker-engine {{ docker_engine_version }} present
+  become: true
+  apt:
+    name: "docker-engine={{ docker_engine_version }}~{{ ansible_distribution|lower }}-{{ ansible_lsb.codename|lower }}"
+    state: present
+  when: docker_engine_version_install.changed
+  notify: docker_restart
+
+- name: add docker users
+  become: yes
+  user:
+    name: '{{ item }}'
+    groups: docker
+    append: yes
+  with_items: '{{ docker_engine_allow_non_root }}'
+

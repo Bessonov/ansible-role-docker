@@ -1,0 +1,53 @@
+---
+language: python
+
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+      python: "2.7"
+      sudo: required
+    - os: linux
+      dist: xenial
+      python: "2.7"
+      sudo: required
+
+# Install ansible
+addons:
+  apt:
+    packages:
+    - python-pip
+
+install:
+  # Install ansible
+  - pip install ansible
+
+  # Check ansible version
+  - ansible --version
+
+  # Create ansible.cfg with correct roles_path
+  - printf '[defaults]\nroles_path=../' >ansible.cfg
+
+script:
+  # check docker is not installed
+  - >
+    docker ps
+    && (echo 'docker installed' && exit 1)
+    || (echo 'docker not installed' && exit 0)
+  # run role
+  - ansible-playbook tests/test.yml -i tests/inventory --connection=local
+  # check docker is installed
+  - >
+    docker ps
+    && (echo 'docker installed' && exit 0)
+    || (echo 'docker not installed' && exit 1)
+  # Test role idempotence.
+  - idempotence=$(mktemp)
+  - ansible-playbook tests/test.yml -i tests/inventory --connection=local | tee -a ${idempotence}
+  - >
+    tail ${idempotence} | grep -q 'changed=0.*failed=0'
+    && (echo 'idempotent' && exit 0)
+    || (echo 'not idempotent' && exit 1)
+
+notifications:
+  webhooks: https://galaxy.ansible.com/api/v1/notifications/
