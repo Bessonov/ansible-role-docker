@@ -1,54 +1,58 @@
-- name: cert tools present
-  apt:
-    name: "{{ item }}"
-    state: present
-  with_items:
-    - apt-transport-https
-    - ca-certificates
 
-- name: docker apt-key present
-  become: true
-  apt_key:
-    url: "https://yum.dockerproject.org/gpg"
-    state: present
-
-- name: docker repo present
-  become: true
-  apt_repository:
-    repo: "deb https://apt.dockerproject.org/repo/ {{ ansible_distribution|lower }}-{{ ansible_lsb.codename|lower }} main"
-    filename: 'docker'
-    state: present
+- include: docker_engine_get_install_version.yml
 
 - name: check installed docker version
-  shell: 'dpkg -l docker-engine | grep {{ docker_engine_version }}'
-  ignore_errors: yes
-  register: docker_engine_version_install
-  changed_when: "docker_engine_version_install.rc != 0"
+  shell: 'dpkg -l docker-ce | grep {{ docker_engine_install_version }}'
+  register: docker_engine_version_installed_result
+  changed_when: false
+  failed_when: false
 
-- name: apt-get update
-  become: true
-  apt:
-    update_cache: yes
-  when: docker_engine_version_install.changed
+- name: store installed docker version result
+  set_fact:
+    docker_engine_desired_version_installed: "{{ docker_engine_version_installed_result.rc == 0 }}"
 
-- name: docker-engine absent
-  become: true
-  apt:
-    name: "docker-engine"
-    state: absent
-  when: docker_engine_version_install.changed
-  notify: docker_restart
+- block:
+  - name: cert tools present
+    become: true
+    apt:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - apt-transport-https
+      - ca-certificates
 
-- name: docker-engine {{ docker_engine_version }} present
-  become: true
-  apt:
-    name: "docker-engine={{ docker_engine_version }}~{{ ansible_distribution|lower }}-{{ ansible_lsb.codename|lower }}"
-    state: present
-  when: docker_engine_version_install.changed
-  notify: docker_restart
+  - name: docker apt-key present
+    become: true
+    apt_key:
+      id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+      url: "https://download.docker.com/linux/ubuntu/gpg"
+      state: present
+
+  - name: docker repo present
+    become: true
+    apt_repository:
+      repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution|lower }} {{ ansible_lsb.codename|lower }} stable"
+      filename: 'docker'
+      state: present
+
+  - name: apt-get update
+    become: true
+    apt:
+      update_cache: yes
+
+  - include: docker_engine_get_install_version.yml docker_engine_fail_on_no_match=true
+
+  - name: docker-engine {{ docker_engine_install_version }} present
+    become: true
+    apt:
+      name: "docker-ce={{ docker_engine_install_version }}"
+      state: present
+      force: true
+    notify: docker_restart
+  when: docker_engine_desired_version_installed == false
 
 - name: add docker users
-  become: yes
+  become: true
   user:
     name: '{{ item }}'
     groups: docker

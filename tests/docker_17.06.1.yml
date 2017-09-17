@@ -1,0 +1,8 @@
+---
+- hosts: localhost
+  connection: local
+  become: true
+  roles:
+    - role: ../..
+      docker_engine_version: 17.06.1
+
