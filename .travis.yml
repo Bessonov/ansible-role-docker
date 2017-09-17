@@ -1,6 +1,8 @@
 ---
 language: python
 
+cache: pip
+
 matrix:
   include:
     - os: linux
@@ -25,29 +27,52 @@ install:
   # Check ansible version
   - ansible --version
 
-  # Create ansible.cfg with correct roles_path
-  - printf '[defaults]\nroles_path=../' >ansible.cfg
+  # uninstall docker
+  - dpkg -l|grep docker
+  - sudo apt-get purge docker-ce
+  - sudo rm /etc/apt/sources.list.d/docker.list
+  - sudo apt-get update
 
 script:
+
   # check docker is not installed
   - >
     docker ps
     && (echo 'docker installed' && exit 1)
     || (echo 'docker not installed' && exit 0)
+
   # run role
-  - ansible-playbook tests/test.yml -i tests/inventory --connection=local
+  - ansible-playbook tests/docker_17.06.1.yml -i tests/inventory
+
   # check docker is installed
   - >
-    docker ps
+    docker --version | grep 17.06.1
     && (echo 'docker installed' && exit 0)
     || (echo 'docker not installed' && exit 1)
-  # Test role idempotence.
+
+  # test role idempotence
   - idempotence=$(mktemp)
-  - ansible-playbook tests/test.yml -i tests/inventory --connection=local | tee -a ${idempotence}
+  - ansible-playbook tests/docker_17.06.1.yml -i tests/inventory | tee -a ${idempotence}
   - >
     tail ${idempotence} | grep -q 'changed=0.*failed=0'
     && (echo 'idempotent' && exit 0)
     || (echo 'not idempotent' && exit 1)
+
+  # upgrade docker
+  - ansible-playbook tests/docker_17.06.2.yml -i tests/inventory
+  # check docker downgrade
+  - >
+    docker --version | grep 17.06.2
+    && (echo 'docker upgraded' && exit 0)
+    || (echo 'docker not upgraded' && exit 1)
+
+  # downgrade docker
+  - ansible-playbook tests/docker_17.06.0.yml -i tests/inventory
+  # check docker downgrade
+  - >
+    docker --version | grep 17.06.0
+    && (echo 'docker downgraded' && exit 0)
+    || (echo 'docker not downgraded' && exit 1)
 
 notifications:
   webhooks: https://galaxy.ansible.com/api/v1/notifications/

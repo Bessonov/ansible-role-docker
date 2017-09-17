@@ -1,0 +1,23 @@
+
+- name: get desired version
+  shell: apt-cache madison docker-ce | awk '{ print $3; }' | grep {{ docker_engine_version }}
+  register: docker_engine_available_version_result
+  failed_when: false
+  changed_when: false
+
+- name: check multiple match
+  debug:
+    msg:
+      - "match multiple versions: {{ docker_engine_available_version_result.stdout_lines | join(', ') }}"
+  when: docker_engine_available_version_result.stdout_lines | length > 1
+  failed_when: true
+
+- name: check no match
+  debug: msg="no match for {{ docker_engine_version }}"
+  when: docker_engine_available_version_result.stdout_lines | length == 0
+  failed_when: docker_engine_fail_on_no_match | default(false, true)
+
+- name: store founded version
+  set_fact:
+    docker_engine_install_version: "{{ docker_engine_available_version_result.stdout }}"
+
