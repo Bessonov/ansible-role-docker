@@ -59,10 +59,10 @@ script:
     || (echo 'not idempotent' && exit 1)
 
   # upgrade docker
-  - ansible-playbook tests/docker_17.06.2.yml -i tests/inventory
+  - ansible-playbook tests/docker_17.09.0.yml -i tests/inventory
   # check docker downgrade
   - >
-    docker --version | grep 17.06.2
+    docker --version | grep 17.09.0
     && (echo 'docker upgraded' && exit 0)
     || (echo 'docker not upgraded' && exit 1)
 
