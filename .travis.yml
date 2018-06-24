@@ -42,35 +42,35 @@ script:
     || (echo 'docker not installed' && exit 0)
 
   # run role
-  - ansible-playbook tests/docker_17.06.1.yml -i tests/inventory
+  - ansible-playbook tests/docker_17.09.0.yml -i tests/inventory
 
   # check docker is installed
   - >
-    docker --version | grep 17.06.1
+    docker --version | grep 17.09.0
     && (echo 'docker installed' && exit 0)
     || (echo 'docker not installed' && exit 1)
 
   # test role idempotence
   - idempotence=$(mktemp)
-  - ansible-playbook tests/docker_17.06.1.yml -i tests/inventory | tee -a ${idempotence}
+  - ansible-playbook tests/docker_17.09.0.yml -i tests/inventory | tee -a ${idempotence}
   - >
     tail ${idempotence} | grep -q 'changed=0.*failed=0'
     && (echo 'idempotent' && exit 0)
     || (echo 'not idempotent' && exit 1)
 
   # upgrade docker
-  - ansible-playbook tests/docker_17.09.0.yml -i tests/inventory
+  - ansible-playbook tests/docker_18.03.1.yml -i tests/inventory
   # check docker downgrade
   - >
-    docker --version | grep 17.09.0
+    docker --version | grep 18.03.1
     && (echo 'docker upgraded' && exit 0)
     || (echo 'docker not upgraded' && exit 1)
 
   # downgrade docker
-  - ansible-playbook tests/docker_17.06.0.yml -i tests/inventory
+  - ansible-playbook tests/docker_17.06.1.yml -i tests/inventory
   # check docker downgrade
   - >
-    docker --version | grep 17.06.0
+    docker --version | grep 17.06.1
     && (echo 'docker downgraded' && exit 0)
     || (echo 'docker not downgraded' && exit 1)
 

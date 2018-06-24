@@ -1,5 +1,5 @@
 
-docker_engine_version: 17.09.0
+docker_engine_version: 18.03.1
 
 # affectiong only on relogin or newgrp docker
 docker_engine_allow_non_root: []
