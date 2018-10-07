@@ -53,7 +53,7 @@ or with parameters:
 
     - hosts: servers
       roles:
-         - Bessonov.docker
+         - role: Bessonov.docker
            # optional set docker version
            docker_engine_version: 17.06.2
 
