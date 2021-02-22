@@ -1,56 +1,47 @@
-
 - include: docker_engine_get_install_version.yml
-
 - name: check installed docker version
   shell: 'dpkg -l docker-ce | grep {{ docker_engine_install_version }}'
   register: docker_engine_version_installed_result
   changed_when: false
   failed_when: false
-
 - name: store installed docker version result
   set_fact:
     docker_engine_desired_version_installed: "{{ docker_engine_version_installed_result.rc == 0 }}"
-
 - block:
   - name: cert tools present
     become: true
     apt:
-      name: "{{ item }}"
+      name:
+        - apt-transport-https
+        - ca-certificates
       state: present
-    with_items:
-      - apt-transport-https
-      - ca-certificates
-
   - name: docker apt-key present
     become: true
     apt_key:
       id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
       url: "https://download.docker.com/linux/ubuntu/gpg"
       state: present
-
   - name: docker repo present
     become: true
     apt_repository:
       repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution|lower }} {{ ansible_lsb.codename|lower }} stable"
       filename: 'docker'
       state: present
-
   - name: apt-get update
     become: true
     apt:
       update_cache: yes
-
   - include: docker_engine_get_install_version.yml docker_engine_fail_on_no_match=true
-
   - name: docker-engine {{ docker_engine_install_version }} present
     become: true
     apt:
-      name: "docker-ce={{ docker_engine_install_version }}"
+      name:
+        - "docker-ce={{ docker_engine_install_version }}"
+        - "docker-ce-cli={{ docker_engine_install_version }}"
       state: present
       force: true
     notify: docker_restart
-  when: docker_engine_desired_version_installed == false
-
+  when: not docker_engine_desired_version_installed
 - name: add docker users
   become: true
   user:
@@ -58,4 +49,3 @@
     groups: docker
     append: yes
   with_items: '{{ docker_engine_allow_non_root }}'
-
