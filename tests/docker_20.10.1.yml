@@ -4,5 +4,5 @@
   become: true
   roles:
     - role: ../..
-      docker_engine_version: 17.09.0
+      docker_engine_version: 20.10.1
 
