@@ -47,5 +47,6 @@
   user:
     name: '{{ item }}'
     groups: docker
+    shell: /bin/bash
     append: yes
   with_items: '{{ docker_engine_allow_non_root }}'
